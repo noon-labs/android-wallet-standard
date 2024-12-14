@@ -32,10 +32,15 @@ import { APP_NAME as WALLET_NAME, ICON as WALLET_ICON } from "../constants/const
 import type { ContentScriptToNativeEventMessage, ListenerMessage, ResponseMessage, SuiListenerType, SuiRequestMessage } from '../types/message';
 import type {
     SuiGetAccountResponse,
+    SuiSignAndExecuteTransactionBlockSerializedInput,
+    SuiSignAndExecuteTransactionSerializedInput,
+    SuiSignTransactionBlockSerializedInput,
+    SuiSignTransactionSerializedInput,
 } from '../types/message/sui';
 import { MESSAGE_TYPE } from '../constants/message';
 import { LINE_TYPE } from '../constants/chain';
 import { SUI_METHOD_TYPE } from '../constants/message/sui';
+import { toBase64 } from "@mysten/bcs";
 
 const request = (message: SuiRequestMessage) =>
     new Promise((res, rej) => {
@@ -44,9 +49,8 @@ const request = (message: SuiRequestMessage) =>
         const handler = (event: MessageEvent<ContentScriptToNativeEventMessage<ResponseMessage, SuiRequestMessage>>) => {
             if (event.data?.isLunch && event.data?.type === MESSAGE_TYPE.RESPONSE__NATIVE_TO_CONTENT_SCRIPT && event.data?.messageId === messageId) {
                 window.removeEventListener('message', handler);
-
                 const { data } = event;
-
+                console.log(data)
                 if (data.response?.error) {
                     rej(data.response.error);
                 } else {
@@ -67,56 +71,139 @@ const getAccounts = async () => {
     return (await request({ method: SUI_METHOD_TYPE.SUI__GET_ACCOUNT, params: undefined })) as SuiGetAccountResponse;
 };
 
-const signTransactionBlock: SuiSignTransactionBlockMethod = (input: SuiSignTransactionBlockInput) => {
-    if (!isTransaction(input.transactionBlock)) {
-        throw new Error('Unexpect transaction format found. Ensure that you are using the `Transaction` class.');
-    }
+const signTransactionBlock: SuiSignTransactionBlockMethod =
+    (input: SuiSignTransactionBlockInput): Promise<SuiSignTransactionBlockOutput> => {
+        return new Promise((resolve, reject) => {
+            try {
+                if (!isTransaction(input.transactionBlock)) {
+                    throw new Error('Unexpected transaction format found. Ensure that you are using the `Transaction` class.');
+                }
 
-    return request({
-        method: 'sui_signTransactionBlock',
-        param: input,
-    }) as Promise<SuiSignTransactionBlockOutput>;
-};
+                const inputParam: SuiSignTransactionBlockSerializedInput = {
+                    transactionBlockSerialized: input.transactionBlock.serialize(),
+                    account: input.account,
+                    chain: input.chain,
+                };
+                request({
+                    method: SUI_METHOD_TYPE.SUI__SIGN_TRANSACTION_BLOCK,
+                    param: inputParam,
+                })
+                    .then(result => resolve(result as SuiSignTransactionBlockOutput))
+                    .catch(error => reject(error));
+            } catch (error) {
+                reject(error);
+            }
+        });
+    };
 
-const signTransaction: SuiSignTransactionMethod = async (input: SuiSignTransactionInput) => {
+const signTransaction: SuiSignTransactionMethod =
+    (input: SuiSignTransactionInput): Promise<SignedTransaction> => {
+        return new Promise(async (resolve, reject) => {
+            try {
 
-    return request({
-        method: 'sui_signTransaction',
-        param: input,
-    }) as Promise<SignedTransaction>;
-};
+                const inputParam: SuiSignTransactionSerializedInput = {
+                    transactionBlockSerialized: await input.transaction.toJSON(),
+                    signal: input.signal,
+                    account: input.account,
+                    chain: input.chain,
+                };
 
-const signAndExecuteTransactionBlock: SuiSignAndExecuteTransactionBlockMethod = (input: SuiSignAndExecuteTransactionBlockInput) => {
-    if (!isTransaction(input.transactionBlock)) {
-        throw new Error('Unexpect transaction format found. Ensure that you are using the `Transaction` class.');
-    }
+                request({
+                    method: SUI_METHOD_TYPE.SUI__SIGN_TRANSACTION,
+                    param: inputParam,
+                })
+                    .then(result => resolve(result as SignedTransaction))
+                    .catch(error => reject(error));
+            } catch (error) {
+                reject(error);
+            }
+        });
+    };
 
-    return request({
-        method: 'sui_signAndExecuteTransactionBlock',
-        param: input,
-    }) as Promise<SuiSignAndExecuteTransactionBlockOutput>;
-};
+const signAndExecuteTransactionBlock: SuiSignAndExecuteTransactionBlockMethod =
+    (input: SuiSignAndExecuteTransactionBlockInput): Promise<SuiSignAndExecuteTransactionBlockOutput> => {
+        return new Promise((resolve, reject) => {
+            try {
+                if (!isTransaction(input.transactionBlock)) {
+                    throw new Error('Unexpected transaction format found. Ensure that you are using the `Transaction` class.');
+                }
 
-const signAndExecuteTransaction: SuiSignAndExecuteTransactionMethod = async (input: SuiSignAndExecuteTransactionInput) => {
+                const inputParam: SuiSignAndExecuteTransactionBlockSerializedInput = {
+                    transactionBlockSerialized: input.transactionBlock.serialize(),
+                    account: input.account,
+                    chain: input.chain,
+                    options: input.options,
+                    requestType: input.requestType,
+                };
+                request({
+                    method: SUI_METHOD_TYPE.SUI__SIGN_AND_EXECUTE_TRANSACTION_BLOCK,
+                    param: inputParam,
+                })
+                    .then(result => resolve(result as SuiSignAndExecuteTransactionBlockOutput))
+                    .catch(error => reject(error));
+            } catch (error) {
+                reject(error);
+            }
+        });
 
-    return request({
-        method: 'sui_signAndExecuteTransaction',
-        param: input,
-    }) as Promise<SuiSignAndExecuteTransactionOutput>;
-};
+    };
 
-const signMessage: SuiSignMessageMethod = (input: SuiSignMessageInput) =>
+const signAndExecuteTransaction: SuiSignAndExecuteTransactionMethod =
+    (input: SuiSignAndExecuteTransactionInput): Promise<SuiSignAndExecuteTransactionOutput> => {
+        return new Promise(async (resolve, reject) => {
+            try {
 
-    request({
-        method: 'sui_signMessage',
-        param: input,
-    }) as Promise<SuiSignMessageOutput>;
+                const inputParam: SuiSignAndExecuteTransactionSerializedInput = {
+                    transactionBlockSerialized: await input.transaction.toJSON(),
+                    signal: input.signal,
+                    account: input.account,
+                    chain: input.chain,
+                    options: {
+                        showRawEffects: true,
+                        showRawInput: true,
+                    },
+                };
+                request({
+                    method: SUI_METHOD_TYPE.SUI__SIGN_AND_EXECUTE_TRANSACTION,
+                    param: inputParam,
+                })
+                    .then(result => resolve(result as SuiSignAndExecuteTransactionOutput))
+                    .catch(error => reject(error));
+            } catch (error) {
+                reject(error);
+            }
+        });
+    };
 
-const signPersonalMessage: SuiSignPersonalMessageMethod = async (input: SuiSignPersonalMessageInput) =>
-    request({
-        method: 'sui_signPersonalMessage',
-        param: input,
-    }) as Promise<SuiSignPersonalMessageOutput>;
+const signMessage: SuiSignMessageMethod =
+    (input: SuiSignMessageInput): Promise<SuiSignMessageOutput> => {
+        return new Promise(async (resolve, reject) => {
+            request({
+                method: SUI_METHOD_TYPE.SUI__SIGN_MESSAGE,
+                param: {
+                    message: toBase64(input.message),
+                    account: input.account
+                }
+            })
+                .then(result => resolve(result as SuiSignMessageOutput))
+                .catch(error => reject(error));
+        });
+    };
+
+const signPersonalMessage: SuiSignPersonalMessageMethod =
+    (input: SuiSignPersonalMessageInput): Promise<SuiSignPersonalMessageOutput> => {
+        return new Promise(async (resolve, reject) => {
+            request({
+                method: SUI_METHOD_TYPE.SUI__SIGN_PERSONAL_MESSAGE,
+                param: {
+                    message: toBase64(input.message),
+                    account: input.account
+                }
+            })
+                .then(result => resolve(result as SuiSignPersonalMessageOutput))
+                .catch(error => reject(error));
+        });
+    };
 
 const off = (eventName: SuiListenerType, eventHandler?: (data: unknown) => void) => {
     const handlerInfos = window.lunch.handlerInfos.filter(

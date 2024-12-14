@@ -17,6 +17,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@aptos-labs/wallet-standard": "^0.2.0",
     "@mysten/wallet-standard": "^0.13.17",
     "@wallet-standard/features": "^1.1.0",
     "@wallet-standard/wallet": "^1.1.0",
