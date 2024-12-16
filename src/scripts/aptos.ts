@@ -7,7 +7,7 @@ import {
     AptosFeatures,
     AptosConnectInput, AptosConnectNamespace, AptosConnectOutput,
     IdentifierArray, UserResponse,
-    Wallet, WalletAccount, WalletIcon,
+    WalletIcon,
     AptosDisconnectNamespace,
     AptosGetNetworkNamespace,
     AptosSignTransactionNamespace,
@@ -44,12 +44,13 @@ import {
     UserResponseStatus,
     NetworkInfo
 } from '@aptos-labs/wallet-standard';
-import { AnyRawTransaction, SigningScheme } from '@aptos-labs/ts-sdk';
+import { AnyRawTransaction, SigningScheme, AccountAddress, Ed25519PublicKey } from '@aptos-labs/ts-sdk';
 import { LINE_TYPE } from '../constants/chain';
 import { MESSAGE_TYPE } from '../constants/message';
 import { APTOS_METHOD_TYPE } from '../constants/message/aptos';
 import { AptosListenerType, AptosRequestMessage, ContentScriptToNativeEventMessage, ListenerMessage, ResponseMessage } from '../types/message';
 import { AptosAccountResponse } from '../types/message/aptos';
+import { fromBase64 } from "@mysten/bcs";
 
 const request = (message: AptosRequestMessage) =>
     new Promise((res, rej) => {
@@ -60,7 +61,7 @@ const request = (message: AptosRequestMessage) =>
                 window.removeEventListener('message', handler);
 
                 const { data } = event;
-
+                console.log(event.data?.messageId, ", data: ", data);
                 if (data.response?.error) {
                     rej(data.response.error);
                 } else {
@@ -83,9 +84,9 @@ const on = (eventName: AptosListenerType, eventHandler: (data: unknown) => void)
             if (eventName === 'accountChange' && !event.data?.message?.result) {
                 void (async () => {
                     try {
-                        const account = (await request({ method: APTOS_METHOD_TYPE.APTOS__ACCOUNT })) as AptosAccountResponse;
+                        const account = (await request({ method: APTOS_METHOD_TYPE.APTOS__ACCOUNT })) as AccountInfo;
 
-                        eventHandler(account.address);
+                        eventHandler(account);
                     } catch {
                         eventHandler('');
                     }
@@ -123,12 +124,14 @@ const connect: AptosConnectMethod =
                 method: APTOS_METHOD_TYPE.APTOS__CONNECT,
                 param: [args]
             })
-                .then(result =>
+                .then(result => {
+                    const account = aptosAccountResponseToAccountInfo(result as AptosAccountResponse)
+                    console.log('account:', account)
                     resolve({
                         status: UserResponseStatus.APPROVED,
-                        args: result as AptosConnectOutput
+                        args: account
                     })
-                )
+                })
                 .catch(error =>
                     reject({
                         message: error,
@@ -159,12 +162,8 @@ const network: AptosGetNetworkMethod =
             request({
                 method: APTOS_METHOD_TYPE.APTOS__NETWORK,
             })
-                .then(result =>
-                    resolve(result as NetworkInfo)
-                )
-                .catch(error =>
-                    reject(error)
-                );
+                .then(result => resolve(result as AptosGetNetworkOutput))
+                .catch(error => reject(error));
         });
     };
 
@@ -174,9 +173,11 @@ const account: AptosGetAccountMethod =
             request({
                 method: APTOS_METHOD_TYPE.APTOS__ACCOUNT
             })
-                .then(result =>
-                    resolve(result as AptoGetsAccountOutput)
-                )
+                .then(result => {
+                    const account = aptosAccountResponseToAccountInfo(result as AptosAccountResponse)
+                    console.log('account:', account)
+                    resolve(account)
+                })
                 .catch(error =>
                     reject(error)
                 );
@@ -253,25 +254,26 @@ const signMessage: AptosSignMessageMethod =
     };
 
 const onAccountChange: AptosOnAccountChangeMethod =
-    (input: AptosOnAccountChangeInput): Promise<void> => {
-        return new Promise((resolve, reject) => {
-            on('accountChange', () => { 
-                resolve() 
-            });
-        });
+    async (input: AptosOnAccountChangeInput): Promise<void> => {
+        console.log("onAccountChange function called")
+        const result = (await request({ method: APTOS_METHOD_TYPE.APTOS__ACCOUNT })) as AptosAccountResponse;
+        const account = aptosAccountResponseToAccountInfo(result)
+        console.log('account:', account)
+        input(account)
     };
 
 const onNetworkChange: AptosOnNetworkChangeMethod =
-    (input: AptosOnNetworkChangeInput): Promise<void> => {
-        return new Promise((resolve, reject) => {
-            on('networkChange', () => { 
-                resolve() 
-            });
-        });
+    async (input: AptosOnNetworkChangeInput): Promise<void> => {
+        console.log("onNetworkChange function called")
+        const result = (await request({ method: APTOS_METHOD_TYPE.APTOS__NETWORK })) as AptosGetNetworkOutput;
+        const network = JSON.parse(JSON.stringify(result))
+        console.log('network:', network)
+        input(network)
     };
 
 const changeNetwork: AptosChangeNetworkMethod =
     (input: AptosChangeNetworkInput): Promise<UserResponse<AptosChangeNetworkOutput>> => {
+        console.log("changeNetwork function called")
         return new Promise((resolve, reject) => {
             request({
                 method: APTOS_METHOD_TYPE.APTOS__CHANGE_NETWORK,
@@ -302,7 +304,7 @@ class AptosStandard implements AptosWallet {
 
     readonly version = '1.0.0';
 
-    readonly name: string = WALLET_NAME;
+    readonly name: string = "Lunch Aptos Wallet";
 
     readonly icon: WalletIcon = WALLET_ICON
 
@@ -367,6 +369,14 @@ class AptosStandard implements AptosWallet {
     }
 
 }
+
+const aptosAccountResponseToAccountInfo: (account: AptosAccountResponse) => AccountInfo =
+    (account: AptosAccountResponse): AccountInfo => {
+        return new AccountInfo({
+            address: new AccountAddress(fromBase64(account.address)),
+            publicKey: new Ed25519PublicKey(fromBase64(account.publicKey))
+        })
+    }
 
 const aptosWalletAccountFromAccountInfo: (account: AccountInfo) => AptosWalletAccount =
     (input: AccountInfo): AptosWalletAccount => {

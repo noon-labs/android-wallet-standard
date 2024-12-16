@@ -1,10 +1,13 @@
 import { LINE_TYPE } from "../../constants/chain";
-import { MESSAGE_TYPE, SUI_LISTENER_TYPE } from "../../constants/message";
+import { APTOS_LISTENER_TYPE, MESSAGE_TYPE, SUI_LISTENER_TYPE } from "../../constants/message";
+import { AptosAccount, AptosChangeNetwork, AptosConnect, AptosDisconnect, AptosNetwork, AptosSignAndSubmitTransaction, AptosSignMessage, AptosSignTransaction } from "./aptos";
 import { SuiGetAccount, SuiSignAndExecuteTransaction, SuiSignAndExecuteTransactionBlock, SuiSignMessage, SuiSignPersonalMessage, SuiSignTransaction, SuiSignTransactionBlock } from "./sui";
 export type SuiRequestMessage = SuiGetAccount | SuiSignAndExecuteTransactionBlock | SuiSignAndExecuteTransaction | SuiSignTransactionBlock | SuiSignTransaction | SuiSignMessage | SuiSignPersonalMessage;
+export type AptosRequestMessage = AptosAccount | AptosConnect | AptosNetwork | AptosChangeNetwork | AptosDisconnect | AptosSignTransaction | AptosSignAndSubmitTransaction | AptosSignMessage;
 type ValueOf<T> = T[keyof T];
 export type SuiListenerType = ValueOf<typeof SUI_LISTENER_TYPE>;
-export type ListenerType = SuiListenerType;
+export type AptosListenerType = ValueOf<typeof APTOS_LISTENER_TYPE>;
+export type ListenerType = SuiListenerType | AptosListenerType;
 export type ResponseMessage = {
     error?: unknown | null;
     result?: unknown | null;

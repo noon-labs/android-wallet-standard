@@ -6,4 +6,8 @@ export declare const SUI_LISTENER_TYPE: {
     readonly ACCOUNT_CHANGED: "accountChange";
     readonly CHAIN_CHANGED: "networkChange";
 };
+export declare const APTOS_LISTENER_TYPE: {
+    readonly ACCOUNT_CHANGED: "accountChange";
+    readonly CHAIN_CHANGED: "networkChange";
+};
 //# sourceMappingURL=index.d.ts.map

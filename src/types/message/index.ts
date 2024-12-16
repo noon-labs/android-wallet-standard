@@ -5,7 +5,6 @@ import {
   AptosChangeNetwork,
   AptosConnect,
   AptosDisconnect,
-  AptosIsConnected,
   AptosNetwork,
   AptosSignAndSubmitTransaction,
   AptosSignMessage,
@@ -36,7 +35,6 @@ export type AptosRequestMessage =
   | AptosNetwork
   | AptosChangeNetwork
   | AptosDisconnect
-  | AptosIsConnected
   | AptosSignTransaction
   | AptosSignAndSubmitTransaction
   | AptosSignMessage;
