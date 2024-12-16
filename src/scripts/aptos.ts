@@ -41,8 +41,7 @@ import {
     AptosWallet,
     AptosWalletAccount,
     AccountInfo,
-    UserResponseStatus,
-    NetworkInfo
+    UserResponseStatus
 } from '@aptos-labs/wallet-standard';
 import { AnyRawTransaction, SigningScheme, AccountAddress, Ed25519PublicKey } from '@aptos-labs/ts-sdk';
 import { LINE_TYPE } from '../constants/chain';
@@ -304,7 +303,7 @@ class AptosStandard implements AptosWallet {
 
     readonly version = '1.0.0';
 
-    readonly name: string = "Lunch Aptos Wallet";
+    readonly name: string = WALLET_NAME;
 
     readonly icon: WalletIcon = WALLET_ICON
 

@@ -242,7 +242,7 @@ const on = (eventName: SuiListenerType, eventHandler: (data: any) => void) => {
 class SuiStandard implements Wallet {
     readonly version = '1.0.0';
 
-    readonly name: string = "Lunch Sui Wallet";
+    readonly name: string = WALLET_NAME;
 
     readonly icon: WalletIcon = WALLET_ICON
 
