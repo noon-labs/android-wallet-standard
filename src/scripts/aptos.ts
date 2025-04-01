@@ -302,8 +302,9 @@ class AptosStandard implements AptosWallet {
     readonly url: string = "https://lunchlunch.xyz";
 
     readonly version = '1.0.0';
-
-    readonly name: string = WALLET_NAME;
+  
+    readonly name: string = "Razor Wallet";
+  // readonly name: string = WALLET_NAME;
 
     readonly icon: WalletIcon = WALLET_ICON
 
