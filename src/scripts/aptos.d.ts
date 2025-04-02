@@ -8,7 +8,7 @@ declare class AptosStandard implements AptosWallet {
     readonly chains: IdentifierArray;
     get features(): AptosFeatures;
     accounts: readonly AptosWalletAccount[];
-    constructor();
+    constructor(name?: string);
 }
 export { AptosStandard };
 //# sourceMappingURL=aptos.d.ts.map

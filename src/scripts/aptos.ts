@@ -303,8 +303,7 @@ class AptosStandard implements AptosWallet {
 
     readonly version = '1.0.0';
   
-    readonly name: string = "Razor Wallet";
-  // readonly name: string = WALLET_NAME;
+    readonly name: string;
 
     readonly icon: WalletIcon = WALLET_ICON
 
@@ -357,7 +356,9 @@ class AptosStandard implements AptosWallet {
 
     accounts: readonly AptosWalletAccount[] = [];
 
-    constructor() {
+    constructor(name: string = WALLET_NAME) {
+        this.name = name;
+        this.id = name;
         void (async () => {
             try {
                 this.accounts = [

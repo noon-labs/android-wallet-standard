@@ -5,7 +5,7 @@ import { AptosStandard } from "./scripts/aptos";
 
 
 void (() => {
-  registerWallet(new AptosStandard());
+  registerWallet(new AptosStandard("Razor Wallet"));
   registerWallet(new SuiStandard());
   window.lunch = {
     version: '1.0.0',
